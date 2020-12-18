@@ -3,9 +3,10 @@ import bunyan from 'bunyan'
 import multiply from 'lodash.multiply'
 import noop from 'lodash.noop'
 import countBy from 'lodash.countby'
+import split from 'lodash.split'
+import partialRight from 'lodash.partialright'
 
 const NUM_DAYS = 24;
-const TARGET = 2020;
 
 const logger = bunyan.createLogger({ name: 'advent' });
 
@@ -17,6 +18,8 @@ const readDataFromFile = (filename, transform = noop) => {
 }
 
 const day1 = () => {
+    const TARGET = 2020;
+    
     const findTargetOperands = (data, target) => {
         let operands = [];
         data.every((num, i) => {
@@ -77,8 +80,52 @@ const day2 = () => {
     };
 }
 
+const day3 = () => {
+    const TREE = '#';
+    const data = readDataFromFile('day3.txt', partialRight(split, ''));
+    const slopes = [
+        { x: 1, y: 1},
+        { x: 3, y: 1},
+        { x: 5, y: 1},
+        { x: 7, y: 1},
+        { x: 1, y: 2}
+    ]
+
+    const isTreeAtPosition = ({ x, y }) => {
+        const row = data[y];
+        let realX = x;
+        if (row.length <= x) {
+            realX = x % row.length;
+        }
+        return row[realX] === TREE;
+    }
+
+    const countTreesForSlope = (slope) => {
+        const pos = { x: 0, y: 0 };
+        let trees = 0;
+        data.forEach(row => {
+            pos.x += slope.x;
+            pos.y += slope.y;
+            if (pos.y < data.length && isTreeAtPosition(pos)) {
+                trees++;
+            }
+        });
+        return trees;
+    }
+
+    const treeCounts = slopes.reduce((counts, slope) => {
+        counts[`${slope.x}-${slope.y}`] = countTreesForSlope(slope);
+        return counts;
+    }, {});
+
+    return {
+        partA: treeCounts['3-1'],
+        partB: Object.values(treeCounts).reduce((total, count) => total * count, 1)
+    }
+}
+
 const days = {
-    day1, day2
+    day1, day2, day3
 };
 
 const run = () => {

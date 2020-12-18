@@ -13,6 +13,9 @@
     "bunyan": "^1.8.14",
     "lodash.countby": "^4.6.0",
     "lodash.multiply": "^4.9.0",
-    "lodash.noop": "^3.0.1"
+    "lodash.noop": "^3.0.1",
+    "lodash.partial": "^4.2.1",
+    "lodash.partialright": "^4.2.1",
+    "lodash.split": "^4.4.2"
   }
 }
