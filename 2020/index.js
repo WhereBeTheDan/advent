@@ -10,11 +10,15 @@ const NUM_DAYS = 24;
 
 const logger = bunyan.createLogger({ name: 'advent' });
 
-const readDataFromFile = (filename, transform = noop) => {
-    return fs.readFileSync(`data/${filename}`)
-        .toString()
-        .split("\n")
-        .map(line => transform(line));
+const readDataFromFile = (filename, transform = noop, readByLine = true) => {
+    let dataStream = fs.readFileSync(`data/${filename}`)
+        .toString();
+
+    if (readByLine) {
+        return dataStream.split("\n").map(line => transform(line));
+    } else {
+        return transform(dataStream);
+    }
 }
 
 const day1 = () => {
@@ -124,8 +128,58 @@ const day3 = () => {
     }
 }
 
+const day4 = () => {
+    const transform = data => data.split('\n\n')
+        .map(line => line
+            .replace(/\n/g, ' ')
+            .split(' ')
+            .reduce((pp, prop) => {
+                let [key, val] = prop.split(':');
+                pp[key] = val;
+                return pp;
+            }, {})
+        )
+    const data = readDataFromFile('day4.txt', transform, false);
+    const required = [
+        { key: 'byr', regex: /[0-9]{4}/, range: [1920, 2002] },
+        { key: 'iyr', regex: /[0-9]{4}/, range: [2010, 2020] },
+        { key: 'eyr', regex: /[0-9]{4}/, range: [2020, 2030] },
+        { key: 'hgt', regex: /[0-9]+(in|cm)/, validator: (value) => {
+            const val = parseInt(value.substring(0, value.length - 2));
+            const unit = value.substring(value.length - 2, value.length);
+            let valid = false;
+            if (unit === 'cm') {
+                valid = val >= 150 && val <= 193;
+            } else if (unit === 'in') {
+                valid = val >= 59 && val <= 76;
+            }
+            return valid;
+        } },
+        { key: 'hcl', regex: /\#[0-9a-f]{6}/ },
+        { key: 'ecl', regex: /(amb|blu|brn|gry|grn|hzl|oth)/ },
+        { key: 'pid', regex: /[0-9]{9}/ },
+    ];
+
+    const filtered = data.filter(pp => required.every(({ key, regex, range, validator }) => {
+        let valid = pp.hasOwnProperty(key) && regex.test(pp[key]);
+        if (!valid) return valid;
+        if (range) {
+            valid = valid && parseInt(pp[key]) >= range[0] && parseInt(pp[key]) <= range[1];
+        }
+        if (validator) {
+            valid = valid && validator(pp[key]);
+        }
+        return valid;
+    }));
+
+    return {
+        partA: data.filter(pp => required.every(({ key }) => pp.hasOwnProperty(key))).length,
+        partB: filtered.length
+    };
+}
+
 const days = {
-    day1, day2, day3
+    day1, day2, day3, day4
 };
 
 const run = () => {
