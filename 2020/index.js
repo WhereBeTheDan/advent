@@ -141,10 +141,10 @@ const day4 = () => {
         )
     const data = readDataFromFile('day4.txt', transform, false);
     const required = [
-        { key: 'byr', regex: /[0-9]{4}/, range: [1920, 2002] },
-        { key: 'iyr', regex: /[0-9]{4}/, range: [2010, 2020] },
-        { key: 'eyr', regex: /[0-9]{4}/, range: [2020, 2030] },
-        { key: 'hgt', regex: /[0-9]+(in|cm)/, validator: (value) => {
+        { key: 'byr', regex: /^[0-9]{4}$/, range: [1920, 2002] },
+        { key: 'iyr', regex: /^[0-9]{4}$/, range: [2010, 2020] },
+        { key: 'eyr', regex: /^[0-9]{4}$/, range: [2020, 2030] },
+        { key: 'hgt', regex: /^[0-9]+(in|cm)$/, validator: (value) => {
             const val = parseInt(value.substring(0, value.length - 2));
             const unit = value.substring(value.length - 2, value.length);
             let valid = false;
@@ -155,9 +155,9 @@ const day4 = () => {
             }
             return valid;
         } },
-        { key: 'hcl', regex: /\#[0-9a-f]{6}/ },
-        { key: 'ecl', regex: /(amb|blu|brn|gry|grn|hzl|oth)/ },
-        { key: 'pid', regex: /[0-9]{9}/ },
+        { key: 'hcl', regex: /^\#[0-9a-f]{6}$/ },
+        { key: 'ecl', regex: /^(amb|blu|brn|gry|grn|hzl|oth)$/ },
+        { key: 'pid', regex: /^[0-9]{9}$/ },
     ];
 
     const filtered = data.filter(pp => required.every(({ key, regex, range, validator }) => {
