@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "bunyan": "^1.8.14",
+    "lodash.clonedeep": "^4.5.0",
     "lodash.countby": "^4.6.0",
     "lodash.difference": "^4.5.0",
     "lodash.maxby": "^4.6.0",

@@ -7,7 +7,7 @@ import split from 'lodash.split'
 import partialRight from 'lodash.partialright'
 import maxBy from 'lodash.maxby'
 import difference from 'lodash.difference'
-import sumBy from 'lodash.sumby'
+import cloneDeep from 'lodash.clonedeep'
 
 const NUM_DAYS = 24;
 
@@ -259,7 +259,7 @@ const day7 = () => {
                 .map(bag => bag.replace(/bag(s)?/, '').trim())
                 .map(bag => { 
                     const [count, ...remaining] = bag.split(' ');
-                    return { count, color: remaining.join(' ') }
+                    return { count: parseInt(count), color: remaining.join(' ') }
                 });
         }
         return { color, contains }
@@ -290,7 +290,7 @@ const day7 = () => {
     });
     const getTotalBags = (bag) => {
         if (bag.contains) {
-            return parseInt(bag.count) + parseInt(bag.count) * bag.contains.reduce((total, inner) => {
+            return bag.count + bag.count * bag.contains.reduce((total, inner) => {
                 return total + getTotalBags(inner);
             }, 0);
         }
@@ -305,8 +305,68 @@ const day7 = () => {
     }
 }
 
+const day8 = () => {
+    const transform = line => {
+        const [cmd, val] = line.split(' ');
+        return { cmd, val: parseInt(val) };
+    };
+    const data = readDataFromFile('day8.txt', transform, true, true);
+
+    const testProgram = (program) => {
+        let accumulator = 0,
+            currentLine = 0,
+            run = true,
+            isLoop = false;
+        while (run) {
+            const { cmd, val, hasRun } = program[currentLine];
+            if (hasRun) {
+                run = false;
+                isLoop = true;
+                continue;
+            }
+            program[currentLine].hasRun = true;
+            if (cmd === 'acc') {
+                accumulator += val;
+            }
+            currentLine += (cmd === 'jmp' ? val : 1);
+            if (currentLine >= program.length) {
+                logger.debug("reached end of execution")
+                run = false;
+            }
+        }
+        return { accumulator, isLoop }
+    }
+
+    const repairProgram = (program) => {
+        let goodAcc = false;
+        let currentLine = 0;
+        while (!goodAcc) {
+            const { cmd } = program[currentLine];
+            if (cmd !== 'acc') {
+                const newProgram = cloneDeep(program);
+                newProgram[currentLine].cmd = cmd === 'nop' ? 'jmp' : 'nop';
+
+                const { accumulator, isLoop } = testProgram(newProgram);
+                if (!isLoop) {
+                    goodAcc = accumulator;
+                    continue;
+                }
+            }
+            if (++currentLine >= program.length) {
+                throw new Error('wtf, no solution found', currentLine);
+            }
+        }
+        return goodAcc;
+    }
+
+    return {
+        partA: testProgram(cloneDeep(data)).accumulator,
+        partB: repairProgram(cloneDeep(data))
+    }
+}
+
 const days = {
-    day1, day2, day3, day4, day5, day6, day7
+    day1, day2, day3, day4, day5, day6, day7, day8
 };
 
 const run = () => {
