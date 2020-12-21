@@ -5,6 +5,8 @@ import noop from 'lodash.noop'
 import countBy from 'lodash.countby'
 import split from 'lodash.split'
 import partialRight from 'lodash.partialright'
+import maxBy from 'lodash.maxby'
+import difference from 'lodash.difference'
 
 const NUM_DAYS = 24;
 
@@ -178,8 +180,66 @@ const day4 = () => {
     };
 }
 
+const day5 = () => {
+    const NUM_ROWS = 128;
+    const NUM_COLS = 8;
+    const getValueFromDirectives = (directives, startingMax, lowerSymbol) => {
+        let min = 0, max = startingMax - 1;
+        directives.forEach(d => {
+            const curr = max - min + 1;
+            if (d === lowerSymbol) {
+                max = max - curr / 2;
+            } else {
+                min = min + curr / 2;
+            }
+        });
+        return min;
+    }
+    const getRowNumber = (line) => {
+        const directives = line.slice(0, 7);
+        return getValueFromDirectives(directives, NUM_ROWS, 'F');
+    }
+    const getColumnNumber = (line) => {
+        const directives = line.slice(7);
+        return getValueFromDirectives(directives, NUM_COLS, 'L');
+    }
+    const data = readDataFromFile('day5.txt', partialRight(split, ''));
+    const possibleIds = Array(NUM_ROWS * NUM_COLS).fill().map((_, i) => i);
+    const seats = data.map(line => {
+        const row = getRowNumber(line);
+        const column = getColumnNumber(line);
+        return row * 8 + column;
+    });
+    const notFound = difference(possibleIds, seats);
+    const mySeat = notFound.find(id => seats.includes(id - 1) && seats.includes(id + 1));
+    return {
+        partA: maxBy(seats),
+        partB: mySeat
+    }
+}
+
+const day6 = () => {
+    const transform = data => data.split('\n\n').map(group => group.split('\n').map(person => person.split('')));
+    const data = readDataFromFile('day6.txt', transform, false);
+    const transformed = data.map(group => {
+        const anyValues = new Set();
+        group.flat().map(answer => anyValues.add(answer));
+        const allValues = new Set(anyValues);
+        anyValues.forEach(val => {
+            if (!group.every(person => person.includes(val))) {
+                allValues.delete(val);
+            }
+        });
+        return { anyValues, allValues };
+    });
+    return {
+        partA: transformed.reduce((total, { anyValues }) => total + anyValues.size, 0),
+        partB: transformed.reduce((total, { allValues }) => total + allValues.size, 0)
+    }
+}
+
 const days = {
-    day1, day2, day3, day4
+    day1, day2, day3, day4, day5, day6
 };
 
 const run = () => {
