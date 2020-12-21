@@ -7,20 +7,31 @@ import split from 'lodash.split'
 import partialRight from 'lodash.partialright'
 import maxBy from 'lodash.maxby'
 import difference from 'lodash.difference'
+import sumBy from 'lodash.sumby'
 
 const NUM_DAYS = 24;
 
-const logger = bunyan.createLogger({ name: 'advent' });
+const logger = bunyan.createLogger({
+    name: 'advent',
+    level: process.env.DEBUG ? 'debug': 'info'
+});
 
-const readDataFromFile = (filename, transform = noop, readByLine = true) => {
+const readDataFromFile = (filename, transform = noop, readByLine = true, writeToFile = false) => {
     let dataStream = fs.readFileSync(`data/${filename}`)
         .toString();
 
+    let transformed;
     if (readByLine) {
-        return dataStream.split("\n").map(line => transform(line));
+        transformed = dataStream.split("\n").map(line => transform(line));
     } else {
-        return transform(dataStream);
+        transformed = transform(dataStream);
     }
+
+    if (writeToFile) {
+        fs.writeFileSync('transformed.json', JSON.stringify(transformed))
+    }
+
+    return transformed;
 }
 
 const day1 = () => {
@@ -42,14 +53,14 @@ const day1 = () => {
 
     const data = readDataFromFile('day1.txt', parseInt);
     let answer = {
-        twoSum: multiply(...findTargetOperands(data, TARGET))
+        partA: multiply(...findTargetOperands(data, TARGET))
     };
     data.every((num, i) => {
         const target = TARGET - num;
         const tempData = data.filter((_, idx) => idx != i);
         const result = findTargetOperands(tempData, target);
         if (result.length) {
-            answer.threeSum = num * multiply(...result);
+            answer.partB = num * multiply(...result);
             return false;
         }
         return true;
@@ -238,17 +249,86 @@ const day6 = () => {
     }
 }
 
+const day7 = () => {
+    const MY_BAG = 'shiny gold'
+    const transform = line => {
+        const [color, inner] = line.replace('.', '').split(' bags contain ');
+        let contains = [];
+        if (inner != 'no other bags') {
+            contains = inner.split(',')
+                .map(bag => bag.replace(/bag(s)?/, '').trim())
+                .map(bag => { 
+                    const [count, ...remaining] = bag.split(' ');
+                    return { count, color: remaining.join(' ') }
+                });
+        }
+        return { color, contains }
+    };
+    const data = readDataFromFile('day7.txt', transform, true, true);
+    const getBagWithChildren = (bag) => {
+        const found = data.find(b => b.color === bag.color);
+        return {
+            color: bag.color,
+            count: bag.count || 1,
+            contains: found.contains.length ? found.contains.map(inner => getBagWithChildren(inner)) : null
+        }
+    };
+    const getColorSet = (set, bag) => {
+        if (!bag.contains) {
+            return;
+        }
+        bag.contains.forEach(inner => {
+            set.add(inner.color);
+            getColorSet(set, inner);
+        });
+    }
+    const withNested = data.map(bag => {
+        const bagWithChildren = getBagWithChildren(bag);
+        const colorSet = new Set();
+        getColorSet(colorSet, bagWithChildren);
+        return { color: bag.color, contains: colorSet }
+    });
+    const getTotalBags = (bag) => {
+        if (bag.contains) {
+            return parseInt(bag.count) + parseInt(bag.count) * bag.contains.reduce((total, inner) => {
+                return total + getTotalBags(inner);
+            }, 0);
+        }
+        return parseInt(bag.count);
+    }
+    const goldBag = data.find(b => b.color === MY_BAG);
+    const goldChildren = goldBag.contains.map(inner => getBagWithChildren(inner));
+
+    return {
+        partA: withNested.filter(bag => bag.contains.has(MY_BAG)).length,
+        partB: goldChildren.reduce((total, inner) => total += getTotalBags(inner), 0)
+    }
+}
+
 const days = {
-    day1, day2, day3, day4, day5, day6
+    day1, day2, day3, day4, day5, day6, day7
 };
 
 const run = () => {
-    for (let day = 1; day <= NUM_DAYS; ++day) {
+    const runDay = (day) => {
         const fnName = `day${day}`;
         if (days.hasOwnProperty(fnName)) {
             logger.info(`Day ${day} ==========`);
-            let output = days[fnName]();
-            logger.info(`  result: ${JSON.stringify(output)}`);
+            try {
+                const output = days[fnName]();
+                output && Object.entries(output).forEach(([key, value]) => {
+                    logger.info(`  * ${key}: ${value}`);
+                });
+            } catch (e) {
+                logger.error(e);
+            }
+        }
+    }
+    if (process.env.DAY) {
+        runDay(process.env.DAY);
+    } else {
+        for (let day = 1; day <= NUM_DAYS; ++day) {
+            runDay(day);
         }
     }
 }

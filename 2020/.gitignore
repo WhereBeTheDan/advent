@@ -1,3 +1,5 @@
 node_modules
 output.txt
+output.json
 transformed.txt
+transformed.json
