@@ -20,6 +20,7 @@
     "lodash.partial": "^4.2.1",
     "lodash.partialright": "^4.2.1",
     "lodash.split": "^4.4.2",
-    "lodash.sumby": "^4.6.0"
+    "lodash.sumby": "^4.6.0",
+    "lodash.zip": "^4.2.0"
   }
 }

@@ -8,6 +8,7 @@ import partialRight from 'lodash.partialright'
 import maxBy from 'lodash.maxby'
 import difference from 'lodash.difference'
 import cloneDeep from 'lodash.clonedeep'
+import zip from 'lodash.zip'
 
 const NUM_DAYS = 24;
 
@@ -17,6 +18,9 @@ const logger = bunyan.createLogger({
 });
 
 const readDataFromFile = (filename, transform = noop, readByLine = true, writeToFile = false) => {
+    if (process.env.TEST) {
+        filename = 'test.txt';
+    }
     let dataStream = fs.readFileSync(`data/${filename}`)
         .toString();
 
@@ -402,8 +406,99 @@ const day9 = () => {
     }
 }
 
+const day10 = () => {
+    let data = readDataFromFile('day10.txt', parseInt, true, true);
+    data.sort((a, b) => a - b);
+    const maxVal = Math.max(...data);
+    data = [0, ...data, maxVal + 3];
+
+    let diffs = { 1: 0, 2: 0, 3: 0 };
+    let counts = { 0: 1 };
+    zip(data.slice(1), data).map(([a, b]) => {
+        diffs[a - b]++;
+        counts[a] = (counts[a - 3] || 0) + (counts[a - 2] || 0) + (counts[a - 1] || 0)
+    });
+
+    return {
+        partA: diffs[1] * diffs[3],
+        partB: counts[maxVal]
+    }
+}
+
+const day11 = () => {
+    const data = readDataFromFile('day11.txt', partialRight(split, ''));
+    const numRows = data.length;
+    const numCols = data[0].length;
+    const deltas = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
+    const OCC = '#';
+    const FREE = 'L';
+    const FLOOR = '.';
+
+    const checkLineOfSight = (data, x, y) => {
+        const checks = deltas.map(([dx, dy]) => {
+            let hasOcc = false, run = true;
+            let currX = x + dx, currY = y + dy;
+
+            while (run && currX >= 0 && currX < numCols && currY >= 0 && currY < numRows) {
+                if (data[currY][currX] !== FLOOR) {
+                    run = false;
+                    hasOcc = data[currY][currX] === OCC;
+                }
+                currX += dx;
+                currY += dy;
+            }
+            return !hasOcc;
+        });
+
+        return checks.filter(s => s).length;
+    };
+
+    const checkAdjacent = (data, x, y) => {
+        return deltas.map(([dx, dy]) => {
+            if (y + dy < 0 || y + dy >= numRows || x + dx < 0 || x + dx >= numCols) {
+                return true;
+            }
+            return data[y + dy][x + dx] !== OCC;
+        }).filter(s => s).length;
+    };
+
+    const debugChart = (chart, debug) => {
+        debug && logger.debug(chart.map(r => r.join('')).join('\n'))
+    }
+
+    const runSeating = (threshold, checkFn, debug = false) => {
+        let working = cloneDeep(data),
+        numChanges;
+        while (numChanges != 0) {
+            numChanges = 0;
+            debugChart(working, debug)
+            working = working.map((row, r) => {
+                return row.map((seat, c) => {
+                    const numFree = checkFn(working, c, r);
+                    if (seat === OCC && numFree <= 8 - threshold) {
+                        numChanges++;
+                        return FREE;
+                    } else if (seat === FREE && numFree === 8) {
+                        numChanges++;
+                        return OCC;
+                    } else {
+                        return seat;
+                    }
+                });
+            });
+        }
+        debugChart(working, debug)
+        return working.flat().filter(seat => seat === OCC).length;
+    }
+
+    return {
+        partA: runSeating(4, checkAdjacent),
+        partB: runSeating(5, checkLineOfSight),
+    }
+}
+
 const days = {
-    day1, day2, day3, day4, day5, day6, day7, day8, day9
+    day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11
 };
 
 const run = () => {
