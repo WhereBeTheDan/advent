@@ -330,7 +330,7 @@ const day8 = () => {
             }
             currentLine += (cmd === 'jmp' ? val : 1);
             if (currentLine >= program.length) {
-                logger.debug("reached end of execution")
+                logger.debug('reached end of execution')
                 run = false;
             }
         }
@@ -365,8 +365,45 @@ const day8 = () => {
     }
 }
 
+const day9 = () => {
+    const PREAMBLE_LENGTH = 25;
+    const data = readDataFromFile('day9.txt', parseInt, true, true);
+    const filtered = data.slice(PREAMBLE_LENGTH);
+
+    let target;
+    filtered.every((value, index) => {
+        const subset = data.slice(index, index + PREAMBLE_LENGTH);
+        const crossproducts = subset.reduce((cps, v1) => cps.concat(subset.flatMap(v2 => v1 + v2)), []);
+        if (!crossproducts.includes(value)) {
+            target = value;
+            return false;
+        }
+        return true;
+    });
+
+    let validOperands;
+    data.every((value, index) => {
+        let total = value,
+            currentIndex = index,
+            operands = [value]
+        while (total < target) {
+            let nextVal = data[++currentIndex];
+            total += nextVal;
+            operands.push(nextVal)
+            if (total === target) {
+                validOperands = operands;
+            }
+        }
+        return !validOperands;
+    })
+    return {
+        partA: target,
+        partB: Math.max(...validOperands) + Math.min(...validOperands)
+    }
+}
+
 const days = {
-    day1, day2, day3, day4, day5, day6, day7, day8
+    day1, day2, day3, day4, day5, day6, day7, day8, day9
 };
 
 const run = () => {
