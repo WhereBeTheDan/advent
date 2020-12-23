@@ -9,6 +9,7 @@ import maxBy from 'lodash.maxby'
 import difference from 'lodash.difference'
 import cloneDeep from 'lodash.clonedeep'
 import zip from 'lodash.zip'
+import times from 'lodash.times'
 
 const NUM_DAYS = 24;
 
@@ -497,8 +498,103 @@ const day11 = () => {
     }
 }
 
+const day12 = () => {
+    const transform = (line) => {
+        const [cmd, ...val] = line.split('');
+        return { cmd, val: parseInt(val.join('')) }
+    }
+    const data = readDataFromFile('day12.txt', transform);
+    const BEARINGS = {
+        0: 'N',
+        90: 'E',
+        180: 'S',
+        270: 'W'
+    };
+    const RADS = 360;
+
+    const resolveMultiplier = (cmd, bearing) => {
+        if (cmd === 'F') {
+            cmd = BEARINGS[bearing];
+        }
+        const sign = cmd === 'S' || cmd === 'W' ? -1 : 1;
+        if (cmd === 'N' || cmd === 'S' ) {
+            return [ 0, sign ];
+        } else {
+            return [ sign, 0 ]
+        }
+    }
+
+    const method1 = () => {
+        let bearing = 90,
+            deltaX = 0,
+            deltaY = 0;
+
+        data.forEach(({ cmd, val }) => {
+            if (cmd === 'L' || cmd === 'R') {
+                const sign = cmd === 'L' ? -1 : 1;
+                bearing = (bearing + (val * sign));
+                if (bearing >= RADS) {
+                    bearing = bearing % RADS;
+                }
+                if (bearing < 0) {
+                    bearing = bearing + RADS;
+                }
+            } else {
+                const [ multX, multY ] = resolveMultiplier(cmd, bearing);
+                deltaX += multX * val;
+                deltaY += multY * val;
+            }
+        });
+
+        return { deltaX, deltaY };
+    }
+
+    const method2 = () => {
+        let waypoint = { x: 10, y: 1 },
+            deltaX = 0,
+            deltaY = 0;
+
+        const resolveTurn = (cmd, val) => {
+            let working = cloneDeep(waypoint);
+            for (let i = 0; i < val / 90; i++) {
+                if (cmd === 'L') {
+                    working = { x: -working.y, y: working.x };
+                } else {
+                    working = { x: working.y, y: -working.x };
+                }
+            }
+            waypoint = working;
+        }
+
+        data.forEach(({ cmd, val }, i) => {
+            if (cmd === 'L' || cmd === 'R') {
+                resolveTurn(cmd, val);
+            } else if (cmd === 'F') {
+                times(val, () => {
+                    deltaX += waypoint.x;
+                    deltaY += waypoint.y;
+                });
+            } else {
+                const [ multX, multY ] = resolveMultiplier(cmd);
+                waypoint.x += multX * val;
+                waypoint.y += multY * val;
+            }
+        });
+
+        return { deltaX, deltaY };
+    }
+
+    const method1Coords = method1();
+    const method2Coords = method2();
+
+    return {
+        partA: Math.abs(method1Coords.deltaX) + Math.abs(method1Coords.deltaY),
+        partB: Math.abs(method2Coords.deltaX) + Math.abs(method2Coords.deltaY)
+    }
+}
+
 const days = {
-    day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11
+    day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11, day12
 };
 
 const run = () => {
