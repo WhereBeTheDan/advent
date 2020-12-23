@@ -6,10 +6,12 @@ import countBy from 'lodash.countby'
 import split from 'lodash.split'
 import partialRight from 'lodash.partialright'
 import maxBy from 'lodash.maxby'
+import minBy from 'lodash.minby'
 import difference from 'lodash.difference'
 import cloneDeep from 'lodash.clonedeep'
 import zip from 'lodash.zip'
 import times from 'lodash.times'
+import { lcm } from 'mathjs'
 
 const NUM_DAYS = 24;
 
@@ -593,8 +595,50 @@ const day12 = () => {
     }
 }
 
+const day13 = () => {
+    const transform = (data) => {
+        const [earliest, buses] = data.split('\n');
+        return { earliest, buses: buses.split(',').map((bus) => bus !== 'x' ? parseInt(bus) : bus) }
+    }
+    const { earliest, buses } = readDataFromFile('day13.txt', transform, false);
+    
+    const buildTimetable = (buses, max) => {
+        return buses.reduce((all, bus, i) => {
+            bus !== 'x' && all.push({
+                departure: i,
+                id: bus,
+                timetable: Array(Math.ceil(max / bus) + 1).fill(0).map((_, i) => i * bus)
+            });
+            return all;
+        }, []);
+    }
+
+    const timetable = buildTimetable(buses, earliest);
+    const closests = timetable.map(({ timetable, id }) => {
+        return { bus: id, time: Math.min(timetable.filter(time => time >= earliest)) };
+    });
+    const { bus, time } = minBy(closests, 'time');
+
+    const [firstBus, ...remaining] = timetable;
+    let firstDeparture = 0;
+    let currentCheck = firstBus.id;
+
+    remaining.forEach(({ departure, id }) => {
+        while ((firstDeparture + departure) % id !== 0) {
+            firstDeparture += currentCheck;
+        }
+      
+        currentCheck = lcm(currentCheck, id);
+    });
+
+    return {
+        partA: (time - earliest) * bus,
+        partB: firstDeparture
+    }
+}
+
 const days = {
-    day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11, day12
+    day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11, day12, day13
 };
 
 const run = () => {
