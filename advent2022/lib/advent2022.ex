@@ -51,6 +51,42 @@ defmodule Advent2022 do
     print_answer(2, answer)
   end
 
+  def day3 do
+    sacks = read_file("day3.txt", "\n")
+
+    calc_pri = fn x ->
+      cond do
+        x >= ?A and x <= ?Z -> x - ?A + 27
+        x >= ?a and x <= ?z -> x - ?a + 1
+        true -> 0
+      end
+    end
+
+    totalA = Enum.reduce(sacks, 0, fn s, acc ->
+      size = div(String.length(s), 2)
+      comp1 = String.to_charlist(s) |> Enum.take(size) |> MapSet.new
+      comp2 = String.to_charlist(s) |> Enum.take(-size) |> MapSet.new
+      pri = MapSet.intersection(comp1, comp2) |> Enum.take(1) |> List.first() |> Kernel.then(calc_pri)
+      acc + pri
+    end)
+
+    totalB = Enum.chunk_every(sacks, 3) |> Enum.reduce(0, fn g, acc ->
+      pri = Enum.map(g, fn m -> String.to_charlist(m) |> MapSet.new end)
+        |> Kernel.then(fn g ->
+          [head | tail] = g
+          Enum.reduce(tail, head, fn m, a -> MapSet.intersection(m, a) end)
+        end)
+        |> Enum.take(1)
+        |> List.first()
+        |> Kernel.then(calc_pri)
+      acc + pri
+    end)
+
+    answer = %{"partA" => totalA, "partB" => totalB}
+
+    print_answer(3, answer)
+  end
+
   defp read_file(path) do
     stream = File.stream!("/Users/dkoch/projects/advent/advent2022/data/" <> path)
     Enum.reduce(stream, "", fn x, d -> d <> x end)
@@ -69,3 +105,4 @@ end
 
 Advent2022.day1()
 Advent2022.day2()
+Advent2022.day3()
