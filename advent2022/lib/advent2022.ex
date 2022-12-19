@@ -87,6 +87,38 @@ defmodule Advent2022 do
     print_answer(3, answer)
   end
 
+  def day4 do
+    pairs = read_file("day4.txt", "\n")
+
+    comp_elvesA = fn e1, e2 ->
+      List.first(e1) >= List.first(e2) and List.last(e1) <= List.last(e2)
+      or List.first(e2) >= List.first(e1) and List.last(e2) <= List.last(e1)
+    end
+
+    totalA = Enum.reduce(pairs, 0, fn p, count ->
+      elf1 = String.split(p, ",") |> List.first() |> String.split("-") |> Enum.map(fn s -> String.to_integer(s) end)
+      elf2 = String.split(p, ",") |> List.last() |> String.split("-") |> Enum.map(fn s -> String.to_integer(s) end)
+      if Kernel.apply(comp_elvesA, [elf1, elf2]), do: count + 1, else: count
+    end)
+
+    comp_elvesB = fn e1, e2 ->
+      (List.first(e1) <= List.first(e2) and List.first(e2) <= List.last(e1))
+      or (List.first(e1) <= List.last(e2) and List.last(e2) <= List.last(e1))
+      or (List.first(e2) <= List.first(e1) and List.first(e1) <= List.last(e2))
+      or (List.first(e2) <= List.last(e1) and List.last(e1) <= List.last(e2))
+    end
+
+    totalB = Enum.reduce(pairs, 0, fn p, count ->
+      elf1 = String.split(p, ",") |> List.first() |> String.split("-") |> Enum.map(fn s -> String.to_integer(s) end)
+      elf2 = String.split(p, ",") |> List.last() |> String.split("-") |> Enum.map(fn s -> String.to_integer(s) end)
+      if Kernel.apply(comp_elvesB, [elf1, elf2]), do: count + 1, else: count
+    end)
+
+    answer = %{"partA" => totalA, "partB" => totalB}
+
+    print_answer(4, answer)
+  end
+
   defp read_file(path) do
     stream = File.stream!("/Users/dkoch/projects/advent/advent2022/data/" <> path)
     Enum.reduce(stream, "", fn x, d -> d <> x end)
@@ -99,10 +131,18 @@ defmodule Advent2022 do
 
   defp print_answer(day, answer) do
     IO.puts("Day #{day} ==========")
-    Enum.map(answer, fn {k, v} -> IO.write("  "); IO.inspect v, label: k end)
+    Enum.map(answer, fn {k, v} ->
+      IO.write("  ")
+      IO.inspect v, label: k
+    end)
+  end
+
+  def run() do
+    day1()
+    day2()
+    day3()
+    day4()
   end
 end
 
-Advent2022.day1()
-Advent2022.day2()
-Advent2022.day3()
+Advent2022.run()
